@@ -1,5 +1,6 @@
 package ru.skypro.lessons.springboot.weblibrary.service;
 import org.springframework.stereotype.Service;
+import ru.skypro.lessons.springboot.weblibrary.exceptions.EmployeeNotFoundException;
 import ru.skypro.lessons.springboot.weblibrary.pojo.Employee;
 import ru.skypro.lessons.springboot.weblibrary.repository.EmployeeRepository;
 import java.util.*;
@@ -12,10 +13,6 @@ public class EmployeeServiceImpl implements EmployeeService{
         this.employeeRepository = employeeRepository;
     }
 
-    @Override
-    public List<Employee> getAllEmployees() {
-        return employeeRepository.getAllEmployees();
-    }
 
     @Override
     public int sumSalary() {
@@ -65,5 +62,42 @@ public class EmployeeServiceImpl implements EmployeeService{
         }
 
         return highSalary;
+    }
+
+    @Override
+    public Employee getEmployeeByID(Long id) throws EmployeeNotFoundException {
+        return employeeRepository.getEmployeeByID(id);
+    }
+
+    @Override
+    public Employee add(Employee employee) {
+        return employeeRepository.addEmployee(employee);
+    }
+
+    @Override
+    public void remove(Long id) throws EmployeeNotFoundException {
+        employeeRepository.removeEmployee(id);
+    }
+
+
+    @Override
+    public Employee editEmployee(Employee employee, Long id) throws EmployeeNotFoundException {
+        return employeeRepository.editEmployee(id, employee);
+    }
+
+    @Override
+    public Collection<Employee> findAll() {
+        return employeeRepository.getAllEmployees();
+    }
+
+    @Override
+    public Collection<Employee> salaryHighterThan(Integer compareSalary) {
+        Collection<Employee> salaryHighter = new ArrayList<>();
+        for (Employee employee : findAll()) {
+            if (employee.getSalary() > compareSalary) {
+                salaryHighter.add(employee);
+            }
+        }
+        return salaryHighter;
     }
 }
