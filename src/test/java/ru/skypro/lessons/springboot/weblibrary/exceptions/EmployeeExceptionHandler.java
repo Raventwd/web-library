@@ -6,6 +6,8 @@ import java.sql.SQLException;
 
 
 
+
+
 @RestControllerAdvice
 public class EmployeeExceptionHandler {
     @ExceptionHandler
@@ -21,5 +23,14 @@ public class EmployeeExceptionHandler {
     @ExceptionHandler
     public ResponseEntity<?> handleException(Exception Exception) {
         return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler
+    public ResponseEntity<?> handleEmployeeNotFoundException(EmployeeNotFoundException employeeNotFoundException) {
+        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+    }
+    @ExceptionHandler
+    public ResponseEntity<?> handleEmployeeAlreadyExistsException(EmployeeNotFoundException employeeNotFoundException) {
+        return new ResponseEntity<>(HttpStatus.CONFLICT);
     }
 }
