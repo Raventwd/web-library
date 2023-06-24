@@ -1,10 +1,14 @@
 package ru.skypro.lessons.springboot.weblibrary.controller;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import ru.skypro.lessons.springboot.weblibrary.dto.*;
 import ru.skypro.lessons.springboot.weblibrary.exceptions.EmployeeNotFoundException;
 import ru.skypro.lessons.springboot.weblibrary.service.EmployeeService;
 import ru.skypro.lessons.springboot.weblibrary.pojo.Employee;
+
+import java.io.IOException;
 import java.util.*;
 
 import static java.util.Objects.isNull;
@@ -88,5 +92,10 @@ public class EmployeeController {
     @GetMapping("/salaryHigherThan")
    public Collection<Employee> getEmployeesWithSalaryHigherThan(@RequestParam("salary") Integer compareSalary) {
         return employeeService.salaryHighterThan(compareSalary);
+    }
+    @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public void upload(@RequestParam("file") MultipartFile multipartFile) throws IOException {
+        employeeService.saveEmployeeFromJson(multipartFile);
+
     }
 }

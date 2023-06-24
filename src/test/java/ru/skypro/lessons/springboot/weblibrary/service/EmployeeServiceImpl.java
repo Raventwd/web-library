@@ -1,10 +1,15 @@
 package ru.skypro.lessons.springboot.weblibrary.service;
+import aj.org.objectweb.asm.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import ru.skypro.lessons.springboot.weblibrary.exceptions.EmployeeNotFoundException;
 import ru.skypro.lessons.springboot.weblibrary.pojo.Employee;
 import ru.skypro.lessons.springboot.weblibrary.repository.*;
 import ru.skypro.lessons.springboot.weblibrary.dto.*;
 import org.springframework.data.domain.*;
+
+import java.io.IOException;
 import java.util.*;
 import java.util.stream.*;
 
@@ -150,5 +155,14 @@ public class EmployeeServiceImpl implements EmployeeService{
             }
         }
         return salaryHighter;
+    }
+
+    @Override
+    public void saveEmployeeFromJson(MultipartFile file) throws IOException {
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        List<Employee> employees = objectMapper.readValue(file.getBytes(), new TypeReference<>() {
+        });
+        employeeRepository.saveAll(employees);
     }
 }

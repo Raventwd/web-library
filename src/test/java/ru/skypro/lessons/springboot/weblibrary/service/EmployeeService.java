@@ -1,7 +1,10 @@
 package ru.skypro.lessons.springboot.weblibrary.service;
+import org.springframework.web.multipart.MultipartFile;
 import ru.skypro.lessons.springboot.weblibrary.exceptions.EmployeeNotFoundException;
 import ru.skypro.lessons.springboot.weblibrary.pojo.Employee;
 import ru.skypro.lessons.springboot.weblibrary.dto.*;
+
+import java.io.IOException;
 import java.util.*;
 
 public interface EmployeeService {
@@ -30,4 +33,6 @@ public interface EmployeeService {
     Employee editEmployee(Employee employee, Long id) throws EmployeeNotFoundException;
 
     Collection<Employee> salaryHighterThan(Integer compareSalary);
+    void saveEmployeeFromJson(MultipartFile file) throws IOException;
+
 }
