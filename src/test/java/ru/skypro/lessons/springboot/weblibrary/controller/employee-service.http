@@ -1,5 +1,5 @@
 ### Получение суммы зарплат сотрудников
-GET http://localhost:8080/employee/salary/sum
+GET http://localhost:8080/employee/salary/max
 
 ### Получение сотрудника с минимальной зарплатой
 GET http://localhost:8080/employee/salary/min
