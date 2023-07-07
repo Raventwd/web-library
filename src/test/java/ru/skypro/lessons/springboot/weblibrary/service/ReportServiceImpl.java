@@ -1,43 +1,57 @@
 package ru.skypro.lessons.springboot.weblibrary.service;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.github.classgraph.Resource;
+import org.junit.platform.commons.logging.*;
+import org.junit.platform.engine.reporting.ReportEntry;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import ru.skypro.lessons.springboot.weblibrary.pojo.Report;
-import ru.skypro.lessons.springboot.weblibrary.repository.EmployeeRepository;
-import ru.skypro.lessons.springboot.weblibrary.repository.ReportRepository;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
+import ru.skypro.lessons.springboot.weblibrary.repository.*;
+
+import java.io.*;
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class ReportServiceImpl implements ReportService {
+    private static final Logger logger = LoggerFactory.getLogger(ReportServiceImpl.class);
+
     private final ReportRepository reportRepository;
-    private final EmployeeService employeeService;
 
-
-    public ReportServiceImpl(ReportRepository reportRepository, EmployeeRepository employeeRepository, EmployeeService employeeService) {
+    public ReportServiceImpl(ReportRepository reportRepository) {
         this.reportRepository = reportRepository;
-        this.employeeService = employeeService;
-
     }
 
     @Override
-    public Integer createReport() throws IOException {
-        File file = new File("Report.json");
-        String s = reportRepository.createReport().toString();
-        try (FileOutputStream fileOutputStream = new FileOutputStream(file.getName());
-             ObjectOutputStream objectOutputStream = new ObjectOutputStream(fileOutputStream)) {
-            objectOutputStream.writeObject(s);
-        }
-        Report report = new Report();
-        report.setFile(file.getPath());
+    public int createReport() throws IOException {
+        List<ReportEntry> reportEntries = reportRepository.getReport();
+        ObjectMapper objectMapper = new ObjectMapper();
+        String json = objectMapper.writeValueAsString(reportEntries);
+        Report report = new Report(json);
         reportRepository.save(report);
-        return report.getId();
+        int reportId = report.getId();
+        logger.info("Report with id = {} was created: {}", reportId, report);
+        logger.debug("Database was updated");
+        return reportId;
     }
+
     @Override
-    public Optional<Report> getReportById(int id) {
-        return reportRepository.findById(id);
+    public ResponseEntity<Resource> downloadFileById(int id) throws FileNotFoundException {
+        try {
+            Report report = reportRepository.findById(id).orElseThrow(FileNotFoundException::new);
+            String json = report.getJson();
+            Resource resource = new ByteArrayResource(json.getBytes());
+            ResponseEntity<Resource> file = ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"report.json\"")
+                    .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                    .body(resource);
+            logger.info("File was find by id = {}: {}", id, file);
+            return file;
+        } catch (FileNotFoundException e) {
+            logger.error("There is no report with id = " + id, e);
+            throw new FileNotFoundException();
+        }
+
     }
-
-
 }

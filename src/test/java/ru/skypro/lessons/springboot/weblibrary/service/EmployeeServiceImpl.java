@@ -1,6 +1,8 @@
 package ru.skypro.lessons.springboot.weblibrary.service;
 import aj.org.objectweb.asm.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
+import org.junit.platform.commons.logging.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import ru.skypro.lessons.springboot.weblibrary.exceptions.EmployeeNotFoundException;
@@ -15,154 +17,139 @@ import java.util.stream.*;
 
 @Service
 public class EmployeeServiceImpl implements EmployeeService{
-    private final EmployeeRepository employeeRepository;
-    private final EmployeePages employeePages;
+
+   private final Logger logger = LoggerFactory.getLogger(EmployeeServiceImpl.class);
+
+   private final EmployeeRepository employeeRepository;
 
     @Override
-    public List<EmployeeDto> findAll() {
-        List<Employee> employees = new ArrayList<>();
-        employeeRepository.findAll().forEach(employees::add);
-        return EmployeeToDto.fromEmployee(employees);
+    public List<EmployeeDto> getAllEmployees() {
+        logger.info("Was invoked method for getting all employees");
+        List<Employee> result = new ArrayList<>();
+        employeeRepository.findAll().forEach(result::add);
+        logger.debug("Database was accessed successfully");
+
+        return result.stream().map(EmployeeDTO::fromEmployee).toList();
     }
 
+
     @Override
-    public void addEmployee(Employee employee) {
+    public void addEmployee(EmployeeDto employeeDto) {
+        logger.info("Was invoked method for adding employee");
+        Employee employee = employeeDTO.toEmployee();
+
         employeeRepository.save(employee);
+        logger.debug("Database was accessed successfully");
+    }
+
+
+    @Override
+    public void editEmployeeById(EmployeeDto employeeDto, Integer id) {
+        logger.info("Was invoked method for refactoring employee");
+        Employee employee = employeeDto.toEmployee();
+        employee.setId(id);
+        employeeRepository.save(employee);
+        logger.debug("Database was accessed successfully");
+    }
+
+
+
+
+    @SneakyThrows
+    @Override
+    public EmployeeDTO getEmployeeById(Integer id) {
+        logger.info("Was invoked method for getting employee by id");
+        String strId = ""+id;
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new IdNotFoundException("Сотрудника по id  "+strId+" не найдено"));
+        logger.debug("Database was accessed successfully");
+
+        return EmployeeDTO.fromEmployee(employee);
     }
 
     @Override
-    public void deleteById(Integer id) {
+    public void removeEmployeeById(Integer id) {
+        logger.info("Was invoked method for deleting employee by id");
         employeeRepository.deleteById(id);
+        logger.debug("Database was accessed successfully");
     }
 
     @Override
-    public Optional<Employee> findById(Integer id) {
-        return employeeRepository.findById(id);
+    public List<EmployeeDto> moreThanDefinedSalary(Integer definedSalary) {
+        logger.info("Was invoked method for getting employee with salary more than defined");
+        List<EmployeeDto> employeeDTOList = employeeRepository.findBySalaryGreaterThan(definedSalary)
+                .stream()
+                .map(EmployeeDto::fromEmployee).toList();
+        logger.debug("Database was accessed successfully");
+        return employeeDTOList;
     }
 
     @Override
-    public List<Employee> getAllEmployeesByName(String name) {
-        return employeeRepository.findByName(name);
-    }
+    public List<EmployeeView> getEmployeeWithHighestSalary(){
+        logger.info("Was invoked method for getting employee with highest salary");
+        List<EmployeeView> employeeViewList = new ArrayList<>();
 
+        int max = employeeRepository.findAllEmployeeView().stream()
+                .max(Comparator.comparingInt(EmployeeView::getSalary)).get().getSalary();
+        logger.debug("Database was accessed successfully");
+        employeeRepository.findAllEmployeeView().stream()
+                .filter(x->x.getSalary()==max).forEach(employeeViewList::add);
+        logger.debug("Database was accessed successfully");
+        return  employeeViewList;
+    }
     @Override
-    public List<Employee> getAllEmployeesByNameAndSalary(String name, int salary) {
-        return employeeRepository.findByNameAndSalary(name, salary);
-    }
-
-    @Override
-    public List<EmployeeDto> getEmployeeWithHighestSalary() {
-        return EmployeeToDto.fromEmployee(employeeRepository.findEmployeeWithBiggestSalary());
-    }
-
-    @Override
-    public List<EmployeeDto> getEmployeeByPosition(int positionId) {
-        return EmployeeToDto.fromEmployee(employeeRepository.findAllByPositionId(positionId));
-    }
-
-    @Override
-    public List<EmployeeDto> getEmployeeByPage(int pageIndex) {
-        Pageable employeeOfConcretePage = PageRequest.of(pageIndex, 10);
-        Page<Employee> page = employeePages.findAll(employeeOfConcretePage);
-        return EmployeeToDto.fromEmployee(page.stream().toList());
-    }
-
-    public EmployeeServiceImpl(EmployeeRepository employeeRepository, EmployeePages employeePages) {
-        this.employeeRepository = employeeRepository;
-        this.employeePages = employeePages;
-    }
-
-
-    @Override
-    public int sumSalary() {
-        List<Employee> employees = employeeRepository.getAllEmployees();
-        int sum = 0;
-        for (Employee employee : employees) {
-            sum = sum + employee.getSalary();
-        }
-        return sum;
-    }
-
-    @Override
-    public Employee minSalary() {
-        List<Employee> employees = employeeRepository.getAllEmployees();
-        Employee employeeWithMinSalary = employees.get(0);
-        for (Employee employee : employees) {
-            if (employee.getSalary() < employeeWithMinSalary.getSalary()){
-                employeeWithMinSalary = employee;
-            }
+    public List<EmployeeView> getEmployeesOnPosition(String positionInfo){
+        logger.info("Was invoked method for getting employee with highest salary");
+        if(positionInfo==null||positionInfo.isBlank()){
+            List<EmployeeView> employeeViewList = employeeRepository.findAllEmployeeView();
+            logger.debug("Database was accessed successfully");
+            return employeeViewList;
 
         }
-        return employeeWithMinSalary;
-    }
+        try{
 
-    @Override
-    public Employee maxSalary() {
-        List<Employee> employees = employeeRepository.getAllEmployees();
-        Employee employeeWithMaxSalary = employees.get(0);
-        for (Employee employee : employees) {
-            if (employee.getSalary() > employeeWithMaxSalary.getSalary()) {
-                employeeWithMaxSalary = employee;
-            }
+            Integer a  = Integer.parseInt(positionInfo);
+            List<EmployeeView> employeeViewList = employeeRepository.findByPositionId(a);
+            logger.debug("Database was accessed successfully");
+            return employeeViewList;
 
+        }catch (NumberFormatException e){
+            List<EmployeeView> employeeViewList = employeeRepository.findByPositionName(positionInfo);
+            logger.debug("Database was accessed successfully");
+            return employeeViewList;
         }
-        return employeeWithMaxSalary;
     }
 
     @Override
-    public List<Employee> salaryAboveAverage () {
-        List<Employee> employees = employeeRepository.getAllEmployees();
-        int averageSalary = sumSalary()/employees.size();
-        List<Employee> highSalary = new ArrayList<>();
-        for (Employee employee : employees){
-            if (employee.getSalary() > averageSalary){
-                highSalary.add(employee);
-            }
+    public List<EmployeeDto> getEmployeeWithPaging(Integer pageIndex, int unitPerPage) {
+        logger.info("Was invoked method for getting employees with paging");
+        if(unitPerPage>10)unitPerPage=10;
+        if(pageIndex==null)pageIndex=0;
+
+        PageRequest employeeOfConcretePage = PageRequest.of(pageIndex, unitPerPage);
+        Page<Employee> page = employeeRepository.findAll(employeeOfConcretePage);
+        logger.debug("Database was accessed successfully");
+        return page.stream().map(EmployeeDTO::fromEmployee).toList();
+    }
+
+
+    @Override
+    @SneakyThrows
+    public void uploadFile(MultipartFile file){
+        logger.info("Was invoked method for getting employees with paging");
+        if(file!=null){
+            ObjectMapper objectMapper = new ObjectMapper();
+
+            List<EmployeeDto> employeeDTOList =
+                    objectMapper.readValue(file.getInputStream(), new TypeReference<List<EmployeeDto>>(){});
+
+            employeeRepository.saveAll(
+                    employeeDTOList.stream().map(EmployeeDto::toEmployee).toList());
+            logger.debug("Database was accessed successfully");
+
+        }else{
+            System.out.println("Файл не найден");
         }
 
-        return highSalary;
-    }
-
-    @Override
-    public Employee getEmployeeByID(Long id) throws EmployeeNotFoundException {
-        return employeeRepository.getEmployeeByID(id);
-    }
-
-    @Override
-    public Employee add(Employee employee) {
-        return employeeRepository.addEmployee(employee);
-    }
-
-    @Override
-    public void remove(Long id) throws EmployeeNotFoundException {
-        employeeRepository.removeEmployee(id);
-    }
-
-
-    @Override
-    public Employee editEmployee(Employee employee, Long id) throws EmployeeNotFoundException {
-        return employeeRepository.editEmployee(id, employee);
-    }
-
-
-
-    @Override
-    public Collection<Employee> salaryHighterThan(Integer compareSalary) {
-        Collection<Employee> salaryHighter = new ArrayList<>();
-        for (Employee employee : findAll()) {
-            if (employee.getSalary() > compareSalary) {
-                salaryHighter.add(employee);
-            }
-        }
-        return salaryHighter;
-    }
-
-    @Override
-    public void saveEmployeeFromJson(MultipartFile file) throws IOException {
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        List<Employee> employees = objectMapper.readValue(file.getBytes(), new TypeReference<>() {
-        });
-        employeeRepository.saveAll(employees);
     }
 }

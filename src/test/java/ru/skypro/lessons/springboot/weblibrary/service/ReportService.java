@@ -1,5 +1,9 @@
 package ru.skypro.lessons.springboot.weblibrary.service;
+import io.github.classgraph.Resource;
+import org.springframework.http.ResponseEntity;
 import ru.skypro.lessons.springboot.weblibrary.pojo.Report;
+
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Optional;
 public interface ReportService {
@@ -7,7 +11,8 @@ public interface ReportService {
 
     public interface ReportService {
 
-        Integer createReport() throws IOException;
-        Optional<Report> getReportById(int id);
+        int createReport() throws IOException;
+
+        ResponseEntity<Resource> downloadFileById(int id) throws FileNotFoundException;
     }
 }

@@ -1,4 +1,5 @@
 package ru.skypro.lessons.springboot.weblibrary.controller;
+import jakarta.validation.Valid;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -31,26 +32,19 @@ public class EmployeeController {
     public void addEmployee(@RequestBody Employee employee) {
         employeeService.addEmployee(employee);
     }
-    @DeleteMapping
-    public void deleteById(@RequestBody Integer id) {
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteById(@PathVariable("id") Long id) throws EmployeeNotFoundException {
         employeeService.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
-    @GetMapping("value = /employees/{id}")
+    @GetMapping("value = {id}")
     public EmployeeDto findById(@PathVariable (name = "id") Integer id) throws EmployeeNotFoundException {
         return EmployeeDto.fromEmployee(employeeService.findById(id).orElseThrow(EmployeeNotFoundException::new));
     }
 
     @GetMapping()
-    public List<Employee> getEmployeesByParams(@RequestParam Map<String, String> params) {
-        String salary = params.get("salary");
-        String name = params.get("name");
-
-        if (isNull(salary)){
-            return employeeService.getAllEmployeesByName(name);
-        }else {
-            int salaryInt = Integer.parseInt(salary);
-            return employeeService.getAllEmployeesByNameAndSalary(name, salaryInt);
-        }
+    public List<Employee> getEmployeesByParams(@RequestParam("salary") Integer salary) {
+        return employeeService.getEmployeesByParams(salary);
     }
     @GetMapping("/withHighestSalary")
     public List<EmployeeDto> getEmployeeWithHighSalary() {
@@ -74,14 +68,14 @@ public class EmployeeController {
 
 
     @PutMapping("/{id}")
-    public ResponseEntity<Employee> editEmployee(@RequestBody Employee employee, @PathVariable Long id) throws EmployeeNotFoundException {
-        Employee foundStudent = employeeService.editEmployee(employee, id);
-        return ResponseEntity.ok(foundStudent);
+    public ResponseEntity<Void> updateEmployee(@PathVariable("id") Long id, @Valid @RequestBody EmployeeDto employeeDTO) throws EmployeeNotFoundException {
+        employeeService.editEmployee(id, employeeDTO);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{id}")
-    public Employee getByID(@PathVariable Long id) throws EmployeeNotFoundException {
-        return employeeService.getEmployeeByID(id);
+    public EmployeeDto getEmployeeById(@PathVariable("id") Long id) throws EmployeeNotFoundException {
+        return employeeService.getEmployeeById(id);
     }
 
     @DeleteMapping("/{id}")

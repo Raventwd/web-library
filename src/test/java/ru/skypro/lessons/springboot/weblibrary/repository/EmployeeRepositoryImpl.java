@@ -1,5 +1,10 @@
 package ru.skypro.lessons.springboot.weblibrary.repository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.modelmapper.ModelMapper;
+import ru.skypro.lessons.springboot.weblibrary.dto.EmployeeDto;
 import ru.skypro.lessons.springboot.weblibrary.exceptions.EmployeeNotFoundException;
 import ru.skypro.lessons.springboot.weblibrary.pojo.Employee;
 import java.util.*;
@@ -7,63 +12,48 @@ import java.util.*;
 
 @Repository
 public class EmployeeRepositoryImpl implements EmployeeRepository {
+    @PersistenceContext
+    private EntityManager entityManager;
 
-    private Long idGenerator = 1L;
-    private final List<Employee> employeeList = List.of(
-            new Employee(idGenerator++,"Катя", 90_000),
-            new Employee(idGenerator++, "Дима", 102_000),
-            new Employee(idGenerator++,"Олег", 80_000),
-            new Employee(idGenerator++,"Вика", 165_000));
+    private final ModelMapper modelMapper;
 
-    @Override
-    public List<Employee> getAllEmployees() {
-        return employeeList;
+    public EmployeeRepositoryImpl(ModelMapper modelMapper) {
+        this.modelMapper = modelMapper;
     }
 
+    @Query("SELECT e FROM Employee e")
+    List<Employee> getAllEmployees();
+
+
     @Override
-    public Employee getEmployeeByID(Long id) throws EmployeeNotFoundException {
-        for (Employee employee : employeeList) {
-            if (employee.getId().equals(id)) {
-                return employee;
-            }
-        }
-        throw new EmployeeNotFoundException();
+    public Employee getEmployeeById(Long id) {
+        return entityManager.find(Employee.class, id);
     }
-    @Override
-    public Employee addEmployee(Employee employee) {
-        employee.setId(idGenerator++);
-        employeeList.add(employee);
-        return employee;
+
+    public EmployeeDto addEmployee(EmployeeDto employee) {
+        Employee entity = modelMapper.map(employee, Employee.class);
+        entityManager.persist(entity);
+        return modelMapper.map(entity, EmployeeDto.class);
     }
+
     @Override
     public void removeEmployee(Long id) throws EmployeeNotFoundException {
-        int index = - 1;
-        for (int i = 0; i < employeeList.size(); i++) {
-            if (employeeList.get(i).getId().equals(id)) {
-                index = i;
-                break;
-            }
+        Employee employee = entityManager.find(Employee.class, id);
+        if (employee != null) {
+            entityManager.remove(employee);
         }
-        if (index == -1) {
-            throw new EmployeeNotFoundException();
-        }
-    }
 
-    @Override
-    public Employee editEmployee(Long id, Employee employee) throws EmployeeNotFoundException {
-        int index = - 1;
-        for (int i = 0; i < employeeList.size(); i++) {
-            if (employeeList.get(i).getId().equals(id)) {
-                index = i;
-                employeeList.set(i, employee);
-                break;
+        @Override
+        public Employee editEmployee (Long id, Employee employee) throws EmployeeNotFoundException {
+            Employee existingEmployee = entityManager.find(Employee.class, id);
+            if (existingEmployee != null) {
+                existingEmployee.setName(employee.getName());
+                existingEmployee.setSalary(employee.getSalary());
+                existingEmployee.setPosition(employee.getPosition());
+                entityManager.merge(existingEmployee);
             }
+            return existingEmployee;
         }
-        if (index == -1) {
-            throw new EmployeeNotFoundException();
-        }
-        return employeeList.get(index);
-    }
 
+    }
 }
-
